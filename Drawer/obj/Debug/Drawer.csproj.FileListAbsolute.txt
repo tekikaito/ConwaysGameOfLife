@@ -1,0 +1,9 @@
+D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.csprojAssemblyReference.cache
+D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.MainForm.resources
+D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.Properties.Resources.resources
+D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.csproj.GenerateResource.cache
+D:\Code\C#\WpfTestApp\Drawer\Drawer\bin\Debug\Drawer.exe.config
+D:\Code\C#\WpfTestApp\Drawer\Drawer\bin\Debug\Drawer.exe
+D:\Code\C#\WpfTestApp\Drawer\Drawer\bin\Debug\Drawer.pdb
+D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.exe
+D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.pdb
