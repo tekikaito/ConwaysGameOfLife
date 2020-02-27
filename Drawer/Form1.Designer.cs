@@ -32,13 +32,18 @@
 			this.pauseButton = new System.Windows.Forms.Button();
 			this.clearButton = new System.Windows.Forms.Button();
 			this.panel1 = new System.Windows.Forms.Panel();
+			this.SpawnRateLabel = new System.Windows.Forms.Label();
+			this.SpawnRateTrackBar = new System.Windows.Forms.TrackBar();
+			this.button1 = new System.Windows.Forms.Button();
 			this.panel1.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.SpawnRateTrackBar)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// DrawPanel
 			// 
 			this.DrawPanel.BackColor = System.Drawing.Color.Transparent;
 			this.DrawPanel.Location = new System.Drawing.Point(210, 0);
+			this.DrawPanel.Margin = new System.Windows.Forms.Padding(0);
 			this.DrawPanel.Name = "DrawPanel";
 			this.DrawPanel.Size = new System.Drawing.Size(1374, 914);
 			this.DrawPanel.TabIndex = 0;
@@ -72,12 +77,47 @@
 			// panel1
 			// 
 			this.panel1.BackColor = System.Drawing.SystemColors.WindowFrame;
+			this.panel1.Controls.Add(this.SpawnRateLabel);
+			this.panel1.Controls.Add(this.SpawnRateTrackBar);
+			this.panel1.Controls.Add(this.button1);
 			this.panel1.Controls.Add(this.pauseButton);
 			this.panel1.Controls.Add(this.clearButton);
 			this.panel1.Location = new System.Drawing.Point(-1, 0);
 			this.panel1.Name = "panel1";
 			this.panel1.Size = new System.Drawing.Size(211, 914);
 			this.panel1.TabIndex = 3;
+			// 
+			// SpawnRateLabel
+			// 
+			this.SpawnRateLabel.AutoSize = true;
+			this.SpawnRateLabel.Font = new System.Drawing.Font("Malgun Gothic", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.SpawnRateLabel.Location = new System.Drawing.Point(13, 195);
+			this.SpawnRateLabel.Name = "SpawnRateLabel";
+			this.SpawnRateLabel.Size = new System.Drawing.Size(41, 20);
+			this.SpawnRateLabel.TabIndex = 5;
+			this.SpawnRateLabel.Text = "aaaa";
+			// 
+			// SpawnRateTrackBar
+			// 
+			this.SpawnRateTrackBar.Location = new System.Drawing.Point(13, 147);
+			this.SpawnRateTrackBar.Maximum = 100;
+			this.SpawnRateTrackBar.Name = "SpawnRateTrackBar";
+			this.SpawnRateTrackBar.Size = new System.Drawing.Size(183, 45);
+			this.SpawnRateTrackBar.TabIndex = 4;
+			this.SpawnRateTrackBar.ValueChanged += new System.EventHandler(this.OnSpawnPercentChanged);
+			// 
+			// button1
+			// 
+			this.button1.BackColor = System.Drawing.Color.LightGray;
+			this.button1.Font = new System.Drawing.Font("Malgun Gothic", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.button1.ForeColor = System.Drawing.Color.Black;
+			this.button1.Location = new System.Drawing.Point(3, 99);
+			this.button1.Name = "button1";
+			this.button1.Size = new System.Drawing.Size(205, 42);
+			this.button1.TabIndex = 3;
+			this.button1.Text = "New Game";
+			this.button1.UseVisualStyleBackColor = false;
+			this.button1.Click += new System.EventHandler(this.OnNewGame);
 			// 
 			// MainForm
 			// 
@@ -90,6 +130,8 @@
 			this.Name = "MainForm";
 			this.Text = "Drawer";
 			this.panel1.ResumeLayout(false);
+			this.panel1.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)(this.SpawnRateTrackBar)).EndInit();
 			this.ResumeLayout(false);
 
 		}
@@ -100,6 +142,9 @@
 		private System.Windows.Forms.Button pauseButton;
 		private System.Windows.Forms.Button clearButton;
 		private System.Windows.Forms.Panel panel1;
+		private System.Windows.Forms.Button button1;
+		private System.Windows.Forms.TrackBar SpawnRateTrackBar;
+		private System.Windows.Forms.Label SpawnRateLabel;
 	}
 }
 

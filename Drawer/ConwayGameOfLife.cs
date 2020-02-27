@@ -11,6 +11,10 @@ namespace Drawer
 		#region fields
 		private Control _displayControl;
 		private bool _update;
+		private bool _mouseDown;
+		private int _mouseX;
+		private int _mouseY;
+		private int _cellWidth;
 		#endregion
 
 
@@ -27,7 +31,9 @@ namespace Drawer
 		{
 			_displayControl = displayControl;
 			_displayControl.Paint += OnPaint;
-			_displayControl.MouseClick += OnClick;
+			_displayControl.MouseDown += OnMouseDown;
+			_displayControl.MouseUp += OnMouseUp;
+			_displayControl.MouseMove += OnMouseMove;
 		}
 		#endregion
 
@@ -43,6 +49,7 @@ namespace Drawer
 		{
 			if (cellWidth <= 0) return;
 
+			_cellWidth = cellWidth;
 			XCellAmount = _displayControl.Width / cellWidth;
 			YCellAmount = _displayControl.Height / cellWidth;
 
@@ -54,6 +61,7 @@ namespace Drawer
 					Cells[i, j] = new Cell(i * cellWidth, j * cellWidth, cellWidth, spawnChancePercent != 0 ? rnd?.Next(100) <= spawnChancePercent - 1 : false);
 
 			InitializeLoopTimer();
+			_displayControl?.Invalidate();
 		}
 
 		/// <summary>
@@ -103,33 +111,25 @@ namespace Drawer
 			}
 		}
 
-		private void OnClick(object sender, MouseEventArgs e)
+		private void OnMouseUp(object sender, MouseEventArgs e)
 		{
-			int selectionX = -1, selectionY = -1;
-			bool found = false;
-			for (int i = 0; i < XCellAmount; i++)
-			{
-				for (int j = 0; j < YCellAmount; j++)
-				{
-					var cell = Cells[i, j];
-					if (cell.Rectangle.X <= e.X
-					 && cell.Rectangle.X + cell.Rectangle.Width > e.X
-					 && cell.Rectangle.Y <= e.Y
-					 && cell.Rectangle.Y + cell.Rectangle.Height >= e.Y)
-					{
-						selectionX = i;
-						selectionY = j;
-						found = true;
-						break;
-					}
-				}
-				if (found)
-					break;
-			}
+			_mouseDown = false;
+			if (Cells.Length > 0)
+				for (int i = 0; i < XCellAmount; i++)
+					for (int j = 0; j < YCellAmount; j++)
+						Cells[i, j].DrawFlag = false;
+		}
 
-			var selectedCell = Cells[selectionX, selectionY];
-			selectedCell.Alive = !selectedCell.Alive;
-			_displayControl?.Invalidate();
+		private void OnMouseMove(object sender, MouseEventArgs e)
+		{
+			if (_mouseDown)
+				PaintCell(e.X, e.Y);
+		}
+
+		private void OnMouseDown(object sender, MouseEventArgs e)
+		{
+			_mouseDown = true;
+			PaintCell(e.X, e.Y);
 		}
 
 		private void OnPaint(object sender, PaintEventArgs e) => DrawGameField(e?.Graphics);
@@ -140,6 +140,20 @@ namespace Drawer
 				for (int i = 0; i < XCellAmount; i++)
 					for (int j = 0; j < YCellAmount; j++)
 						gfx?.FillRectangle(Cells[i, j].Color, Cells[i, j].Rectangle);
+		}
+
+		private void PaintCell(int x, int y)
+		{
+			if (x >= 0 && y >= 0 && x < _displayControl.Width - _cellWidth && y < _displayControl.Height - _cellWidth)
+			{
+				var selectedCell = Cells[x / _cellWidth, y / _cellWidth];
+				if (!selectedCell.DrawFlag)
+				{
+					selectedCell.Alive = !selectedCell.Alive;
+					selectedCell.DrawFlag = true;
+					_displayControl?.Invalidate();
+				}
+			}
 		}
 
 		IEnumerable<Cell> GetNeighbours(int i, int j)

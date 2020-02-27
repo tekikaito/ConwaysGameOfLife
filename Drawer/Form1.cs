@@ -6,7 +6,12 @@ namespace Drawer
 {
 	public partial class MainForm : Form
 	{
+		#region const
+		private const int CELL_WIDTH = 4;
+		#endregion
+
 		#region fields
+		private int _spawnRate = 0;
 		private ConwayGameOfLife _game;
 		#endregion
 
@@ -27,7 +32,8 @@ namespace Drawer
 				null, DrawPanel, new object[] { true });
 
 			_game = new ConwayGameOfLife(DrawPanel);
-			_game?.Initialize(2);
+			_game?.Initialize(CELL_WIDTH);
+			SpawnRateLabel.Text = string.Format("Initial Livechance: {0}%", _spawnRate);
 			_game?.DrawX(_game.XCellAmount / 2, _game.YCellAmount / 2);
 		}
 
@@ -39,5 +45,19 @@ namespace Drawer
 
 		private void OnClear(object sender, EventArgs e) => _game?.Clear();
 		#endregion
+
+		private void OnNewGame(object sender, EventArgs e)
+		{
+			_game.Initialize(CELL_WIDTH, _spawnRate);
+		}
+
+		private void OnSpawnPercentChanged(object sender, EventArgs e)
+		{
+			_spawnRate = SpawnRateTrackBar.Value;
+			UpdatePercentLabel();
+			_game.Initialize(CELL_WIDTH, _spawnRate);
+		}
+
+		private void UpdatePercentLabel() => SpawnRateLabel.Text = string.Format("Initial Livechance: {0}%", _spawnRate);
 	}
 }

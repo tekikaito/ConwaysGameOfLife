@@ -20,6 +20,8 @@ namespace Drawer
 			Color = val ? Brushes.White : Brushes.Black;
 		}
 
+		public bool DrawFlag { get; set; }
+
 		public Cell(int xPos, int yPos, int cellWidth, bool alive)
 		{
 			Rectangle = new Rectangle(xPos, yPos, cellWidth, cellWidth);
