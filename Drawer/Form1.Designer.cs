@@ -32,10 +32,12 @@
 			this.pauseButton = new System.Windows.Forms.Button();
 			this.clearButton = new System.Windows.Forms.Button();
 			this.panel1 = new System.Windows.Forms.Panel();
+			this.SpeedRateTrackBar = new System.Windows.Forms.TrackBar();
 			this.SpawnRateLabel = new System.Windows.Forms.Label();
 			this.SpawnRateTrackBar = new System.Windows.Forms.TrackBar();
 			this.button1 = new System.Windows.Forms.Button();
 			this.panel1.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.SpeedRateTrackBar)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.SpawnRateTrackBar)).BeginInit();
 			this.SuspendLayout();
 			// 
@@ -77,6 +79,7 @@
 			// panel1
 			// 
 			this.panel1.BackColor = System.Drawing.SystemColors.WindowFrame;
+			this.panel1.Controls.Add(this.SpeedRateTrackBar);
 			this.panel1.Controls.Add(this.SpawnRateLabel);
 			this.panel1.Controls.Add(this.SpawnRateTrackBar);
 			this.panel1.Controls.Add(this.button1);
@@ -86,6 +89,18 @@
 			this.panel1.Name = "panel1";
 			this.panel1.Size = new System.Drawing.Size(211, 914);
 			this.panel1.TabIndex = 3;
+			// 
+			// SpeedRateTrackBar
+			// 
+			this.SpeedRateTrackBar.Location = new System.Drawing.Point(13, 246);
+			this.SpeedRateTrackBar.Maximum = 1000;
+			this.SpeedRateTrackBar.Minimum = 1;
+			this.SpeedRateTrackBar.Name = "SpeedRateTrackBar";
+			this.SpeedRateTrackBar.RightToLeftLayout = true;
+			this.SpeedRateTrackBar.Size = new System.Drawing.Size(183, 45);
+			this.SpeedRateTrackBar.TabIndex = 6;
+			this.SpeedRateTrackBar.Value = 17;
+			this.SpeedRateTrackBar.ValueChanged += new System.EventHandler(this.OnSpeedRateChanged);
 			// 
 			// SpawnRateLabel
 			// 
@@ -131,6 +146,7 @@
 			this.Text = "Drawer";
 			this.panel1.ResumeLayout(false);
 			this.panel1.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)(this.SpeedRateTrackBar)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.SpawnRateTrackBar)).EndInit();
 			this.ResumeLayout(false);
 
@@ -145,6 +161,7 @@
 		private System.Windows.Forms.Button button1;
 		private System.Windows.Forms.TrackBar SpawnRateTrackBar;
 		private System.Windows.Forms.Label SpawnRateLabel;
+		private System.Windows.Forms.TrackBar SpeedRateTrackBar;
 	}
 }
 

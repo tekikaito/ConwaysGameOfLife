@@ -7,7 +7,7 @@ namespace Drawer
 	public partial class MainForm : Form
 	{
 		#region const
-		private const int CELL_WIDTH = 4;
+		private const int CELL_WIDTH = 3;
 		#endregion
 
 		#region fields
@@ -35,6 +35,8 @@ namespace Drawer
 			_game?.Initialize(CELL_WIDTH);
 			SpawnRateLabel.Text = string.Format("Initial Livechance: {0}%", _spawnRate);
 			_game?.DrawX(_game.XCellAmount / 2, _game.YCellAmount / 2);
+			_game?.DrawX(_game.XCellAmount / 4, _game.YCellAmount / 2);
+			_game?.DrawX(_game.XCellAmount / 2, _game.YCellAmount / 4);
 		}
 
 		private void OnPauseToggle(object sender, EventArgs e)
@@ -59,5 +61,10 @@ namespace Drawer
 		}
 
 		private void UpdatePercentLabel() => SpawnRateLabel.Text = string.Format("Initial Livechance: {0}%", _spawnRate);
+
+		private void OnSpeedRateChanged(object sender, EventArgs e)
+		{
+			_game.UpdateRateInMilliseconds = (sender as TrackBar).Value;
+		}
 	}
 }

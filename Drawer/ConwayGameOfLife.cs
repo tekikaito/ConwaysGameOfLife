@@ -12,9 +12,10 @@ namespace Drawer
 		private Control _displayControl;
 		private bool _update;
 		private bool _mouseDown;
-		private int _mouseX;
-		private int _mouseY;
+		private bool _wasPaused;
+		private int _updateRate = 17;
 		private int _cellWidth;
+		private Timer _timer = new Timer();
 		#endregion
 
 
@@ -23,12 +24,25 @@ namespace Drawer
 		public int XCellAmount { get; private set; }
 		public int YCellAmount { get; private set; }
 		public bool IsPaused => !_update;
+		public int UpdateRateInMilliseconds
+		{
+			get
+			{
+				return _updateRate;
+			}
+			set
+			{
+				_updateRate = value;
+				_timer.Interval = _updateRate;
+			}
+		}
 		#endregion
 
 
 		#region ctor
 		public ConwayGameOfLife(Control displayControl)
 		{
+			_timer.Interval = _updateRate;
 			_displayControl = displayControl;
 			_displayControl.Paint += OnPaint;
 			_displayControl.MouseDown += OnMouseDown;
@@ -95,11 +109,9 @@ namespace Drawer
 
 		private void InitializeLoopTimer()
 		{
-			var timer = new Timer();
-			timer.Interval = 50; // 60fps = 17
-			timer.Enabled = true;
-			timer.Tick -= OnUpdate;
-			timer.Tick += OnUpdate;
+			_timer.Enabled = true;
+			_timer.Tick -= OnUpdate;
+			_timer.Tick += OnUpdate;
 		}
 
 		private void OnUpdate(object sender, EventArgs e)
@@ -113,6 +125,8 @@ namespace Drawer
 
 		private void OnMouseUp(object sender, MouseEventArgs e)
 		{
+			if (!_wasPaused)
+				_update = true;
 			_mouseDown = false;
 			if (Cells.Length > 0)
 				for (int i = 0; i < XCellAmount; i++)
@@ -128,6 +142,10 @@ namespace Drawer
 
 		private void OnMouseDown(object sender, MouseEventArgs e)
 		{
+			if (!_update)
+				_wasPaused = true;
+
+			_update = false;
 			_mouseDown = true;
 			PaintCell(e.X, e.Y);
 		}
