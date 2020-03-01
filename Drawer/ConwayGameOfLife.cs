@@ -140,8 +140,8 @@ namespace Drawer
 		private void OnMouseMove(object sender, MouseEventArgs e)
 		{
 			if (_mouseDown)
-				if(CurrentCellPattern == null)
-				PaintCell(e.X, e.Y);
+				if (CurrentCellPattern == null)
+					PaintCell(e.X, e.Y);
 		}
 
 		private void OnMouseDown(object sender, MouseEventArgs e)
@@ -163,10 +163,7 @@ namespace Drawer
 			var yCell = y / _cellWidth;
 			Cells[xCell, yCell].Alive = true;
 			for (int i = 0; i < CurrentCellPattern.Offsets.Length; i++)
-			{
-				if (ArrayIndexExists(xCell + CurrentCellPattern.Offsets[i].X, yCell + CurrentCellPattern.Offsets[i].Y))
-					Cells[xCell + CurrentCellPattern.Offsets[i].X, yCell + CurrentCellPattern.Offsets[i].Y].Alive = true;
-			}
+				GetNeighbour(xCell + CurrentCellPattern.Offsets[i].X, yCell + CurrentCellPattern.Offsets[i].Y).Alive = true;
 			_displayControl.Invalidate();
 		}
 
@@ -211,17 +208,30 @@ namespace Drawer
 
 		bool ArrayIndexExists(int x, int y) => x >= 0 && x < XCellAmount && y >= 0 && y < YCellAmount;
 
+		Cell GetNeighbour(int indexX, int indexY)
+		{
+			if (indexX > 0)
+				indexX = indexX % XCellAmount;
+			if(indexX < 0)
+				indexX = (XCellAmount - (indexX + 2)) % XCellAmount;
+			if (indexY > 0)
+				indexY = indexY % YCellAmount;
+			if(indexY < 0)
+				indexY = (YCellAmount - (indexY + 2)) % YCellAmount;
+			return Cells[indexX, indexY];
+		}
+
 		IEnumerable<Cell> GetNeighbours(int i, int j)
 		{
 			var cells = new List<Cell>();
-			if (ArrayIndexExists(i - 1, j - 1)) cells.Add(Cells[i - 1, j - 1]);
-			if (ArrayIndexExists(i - 1, j)) cells.Add(Cells[i - 1, j]);
-			if (ArrayIndexExists(i - 1, j + 1)) cells.Add(Cells[i - 1, j + 1]);
-			if (ArrayIndexExists(i, j + 1)) cells.Add(Cells[i, j + 1]);
-			if (ArrayIndexExists(i + 1, j + 1)) cells.Add(Cells[i + 1, j + 1]);
-			if (ArrayIndexExists(i + 1, j)) cells.Add(Cells[i + 1, j]);
-			if (ArrayIndexExists(i + 1, j - 1)) cells.Add(Cells[i + 1, j - 1]);
-			if (ArrayIndexExists(i, j - 1)) cells.Add(Cells[i, j - 1]);
+			cells.Add(GetNeighbour(i - 1, j - 1));
+			cells.Add(GetNeighbour(i - 1, j));
+			cells.Add(GetNeighbour(i - 1, j + 1));
+			cells.Add(GetNeighbour(i, j + 1));
+			cells.Add(GetNeighbour(i + 1, j + 1));
+			cells.Add(GetNeighbour(i + 1, j));
+			cells.Add(GetNeighbour(i + 1, j - 1));
+			cells.Add(GetNeighbour(i, j - 1));
 			return cells;
 		}
 
