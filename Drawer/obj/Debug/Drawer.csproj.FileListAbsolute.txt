@@ -7,3 +7,12 @@ D:\Code\C#\WpfTestApp\Drawer\Drawer\bin\Debug\Drawer.exe
 D:\Code\C#\WpfTestApp\Drawer\Drawer\bin\Debug\Drawer.pdb
 D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.exe
 D:\Code\C#\WpfTestApp\Drawer\Drawer\obj\Debug\Drawer.pdb
+C:\Users\lizzb\code\repos\conway\Drawer\bin\Debug\Drawer.exe.config
+C:\Users\lizzb\code\repos\conway\Drawer\bin\Debug\Drawer.exe
+C:\Users\lizzb\code\repos\conway\Drawer\bin\Debug\Drawer.pdb
+C:\Users\lizzb\code\repos\conway\Drawer\obj\Debug\Drawer.csprojAssemblyReference.cache
+C:\Users\lizzb\code\repos\conway\Drawer\obj\Debug\Drawer.MainForm.resources
+C:\Users\lizzb\code\repos\conway\Drawer\obj\Debug\Drawer.Properties.Resources.resources
+C:\Users\lizzb\code\repos\conway\Drawer\obj\Debug\Drawer.csproj.GenerateResource.cache
+C:\Users\lizzb\code\repos\conway\Drawer\obj\Debug\Drawer.exe
+C:\Users\lizzb\code\repos\conway\Drawer\obj\Debug\Drawer.pdb

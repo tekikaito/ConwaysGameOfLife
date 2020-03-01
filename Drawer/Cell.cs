@@ -6,26 +6,36 @@ namespace Drawer
 	public class Cell
 	{
 		#region fields
-		private bool _alive; 
+		private bool _alive;
 		#endregion
 
+
+		#region properties
 		public Rectangle Rectangle { get; set; }
 		public Brush Color { get; set; }
+		public bool Alive { get => _alive; set => SetAlive(value); } 
+		public bool DrawFlag { get; set; }
+		#endregion
 
-		public bool Alive { get => _alive; set => SetAlive(value); }
 
+
+		#region methods
+		public Cell(int xPos, int yPos, int cellWidth, bool alive)
+		{
+			Rectangle = new Rectangle(xPos, yPos, cellWidth, cellWidth);
+			SetAlive(alive);
+		}
+		
 		private void SetAlive(bool val)
 		{
 			_alive = val;
 			Color = val ? Brushes.White : Brushes.Black;
 		}
 
-		public bool DrawFlag { get; set; }
-
-		public Cell(int xPos, int yPos, int cellWidth, bool alive)
+		public void Draw(Graphics gfx)
 		{
-			Rectangle = new Rectangle(xPos, yPos, cellWidth, cellWidth);
-			SetAlive(alive);
+			gfx?.FillRectangle(Color, Rectangle);
 		}
+		#endregion
 	}
 }
