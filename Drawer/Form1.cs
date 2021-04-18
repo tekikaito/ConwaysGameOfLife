@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -9,12 +7,13 @@ namespace Drawer
 	public partial class MainForm : Form
 	{
 		#region const
-		private const int CELL_WIDTH = 16;
+		const int CELL_WIDTH = 4;
+		const string PEN_TOOL = "Pen";
 		#endregion
 
-		#region fields
-		private int _spawnRate = 0;
-		private ConwayGameOfLife _game;
+		#region props
+		protected int SpawnRate { get; set; } = 0;
+		protected ConwayGameOfLife Game { get; set; }
 		#endregion
 
 		#region ctor
@@ -27,76 +26,84 @@ namespace Drawer
 		#endregion
 
 		#region EventHandler
-		private void OnLoad(object sender, EventArgs e)
+		void OnLoad(object sender, EventArgs e)
 		{
+			// DoubleBuffer member needs to be set by using Reflection, because its a private member
 			typeof(Panel).InvokeMember("DoubleBuffered",
 				BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
 				null, DrawPanel, new object[] { true });
 
 
-			_game = new ConwayGameOfLife(DrawPanel);
-			_game?.Initialize(CELL_WIDTH);
-			_game?.DrawX(_game.XCellAmount / 2, _game.YCellAmount / 2);
-			_game?.DrawX(_game.XCellAmount / 4, _game.YCellAmount / 2);
-			_game?.DrawX(_game.XCellAmount / 2, _game.YCellAmount / 4);
+			Game = new ConwayGameOfLife(DrawPanel);
+			DrawPanel.MouseClick += OnDrawPanelClicked;
+			Game.Initialize(CELL_WIDTH);
 			UpdateSpeedRateLabel();
-			UpdatePercentLabel();
-			InitializePatterns();
+			UpdateSpawnRateLabel();
+			UpdatePauseButtonText();
+			InitializeTools();
+			ToolsComboBox.SelectedItem = ToolsComboBox.Items[0];
 		}
 
-		private void InitializePatterns()
-		{
-			CellPatternsComboBox.Items.Add(
-				new CellPattern("Glider", new Point(1, 0), new Point(2, 0), new Point(2, 1), new Point(1, 2)));
 
-			CellPatternsComboBox.Items.Add(
-				new CellPattern("Orion", 
-					new Point(0, 1), 
-					new Point(0, 2), 
-					new Point(2, 2),
-					new Point(3, 2),
-					new Point(7, 2),
-					new Point(1, 2)));
+		void OnDrawPanelClicked(object sender, MouseEventArgs e)
+		{
+			if (!Game.DrawMode && ToolsComboBox.SelectedItem is Pattern pattern)
+				Game.DrawPattern(e.X, e.Y, pattern);
 		}
 
-		private void OnPauseToggle(object sender, EventArgs e)
+		void InitializeTools()
 		{
-			_game?.TogglePauseState();
-			(sender as Button).Text = _game?.IsPaused == true ? "Play" : "Pause";
+			ToolsComboBox.Items.Add(PEN_TOOL);
+			ToolsComboBox.Items.Add(FixedPattern.Glider);
+			ToolsComboBox.Items.Add(EndlessPattern.XPattern);
 		}
 
-		private void OnClear(object sender, EventArgs e) => _game?.Clear();
-		#endregion
-
-		private void OnNewGame(object sender, EventArgs e)
+		void OnPauseToggle(object sender, EventArgs e)
 		{
-			_game.Initialize(CELL_WIDTH, _spawnRate);
+			Game.TogglePauseState();			
 		}
 
-		private void UpdatePercentLabel() => SpawnRateLabel.Text = string.Format("Initial Livechance: {0}%", _spawnRate);
-		private void UpdateSpeedRateLabel() => UpdateRateLabel.Text = string.Format("Updaterate = {0}ms", _game.UpdateRateInMilliseconds);
-
-		private void OnSpawnPercentChanged(object sender, EventArgs e)
+		void OnClear(object sender, EventArgs e)
 		{
-			_spawnRate = SpawnRateTrackBar.Value;
-			UpdatePercentLabel();
+			Game.Clear();
+			if (!Game.IsPaused)
+			{
+				Game.TogglePauseState();
+				UpdatePauseButtonText();
+			}
 		}
 
-		private void OnSpeedRateChanged(object sender, EventArgs e)
+		void OnNewGame(object sender, EventArgs e)
 		{
-			_game.UpdateRateInMilliseconds = (sender as TrackBar).Value;
+			Game.Initialize(CELL_WIDTH, SpawnRate);
+		}
+
+		void OnSpawnPercentChanged(object sender, EventArgs e)
+		{
+			SpawnRate = SpawnRateTrackBar.Value;
+			UpdateSpawnRateLabel();
+		}
+
+		void OnSpeedRateChanged(object sender, EventArgs e)
+		{
+			Game.FPS = (sender as TrackBar).Value;
 			UpdateSpeedRateLabel();
 		}
 
-		private void OnGridEnableCheck(object sender, EventArgs e)
+		void OnGridEnableCheck(object sender, EventArgs e)
 		{
-			_game.GridEnabled = EnableGridCheckbox.Checked;
+			Game.GridEnabled = EnableGridCheckbox.Checked;
 			DrawPanel?.Invalidate();
 		}
 
-		private void OnSelectedPatternChanged(object sender, EventArgs e)
+		void OnSelectedPatternChanged(object sender, EventArgs e)
 		{
-			_game.CurrentCellPattern = CellPatternsComboBox.SelectedItem as CellPattern;
+			Game.DrawMode = ToolsComboBox.SelectedItem.Equals(PEN_TOOL);
 		}
+
+		void UpdateSpawnRateLabel() => SpawnRateLabel.Text = $"Initial Livechance: {SpawnRate}%";
+		void UpdateSpeedRateLabel() => UpdateRateLabel.Text = $"Updaterate = {Game.FPS} FPS";
+		void UpdatePauseButtonText() => pauseButton.Text = Game?.IsPaused == true ? "Play" : "Pause";
+		#endregion
 	}
 }

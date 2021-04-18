@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -8,49 +8,76 @@ namespace Drawer
 {
 	public class ConwayGameOfLife
 	{
-		#region fields
-		private Control _displayControl;
-		private bool _update;
-		private bool _mouseDown;
-		private bool _wasPaused;
-		private int _updateRate = 17;
-		private int _cellWidth;
-		private Timer _timer = new Timer();
-		private Pen _pen = new Pen(Brushes.DarkGray, 0.5f);
-		#endregion
-
-
 		#region properties
-		public Cell[,] Cells { get; private set; }
-		public CellPattern CurrentCellPattern { get; set; }
-		public int XCellAmount { get; private set; }
-		public int YCellAmount { get; private set; }
-		public bool IsPaused => !_update;
-		public bool GridEnabled { get; set; }
-		public int UpdateRateInMilliseconds
-		{
-			get
-			{
-				return _updateRate;
-			}
-			set
-			{
-				_updateRate = value;
-				_timer.Interval = _updateRate;
-			}
-		}
+		// saves previous Pause State
+		protected bool PrevUpdateState { get; set; } = false;
+		// update game field when timer elapses?
+		protected bool Update { get; set; }
+		// parentcontrol
+		protected Control DisplayControl { get; }
+		// Engine which hosts the game
+		protected GridGameEngine Engine { get; set; }
+
+		// buffer which holds info for the next frame
+		// bitarrays ordered in rows
+		// 1 0 0 1 0 1 0 0 0 <- Buffer[0]
+		// -----------------
+		// 1 0 0 1 0 1 0 0 0 <- Buffer[1]
+		// -----------------
+		// 1 0 0 1 0 1 0 0 0 <- Buffer[2]
+		// -----------------
+		// 1 0 0 1 0 1 0 0 0 <- Buffer[3]
+		// -----------------
+		// 1 0 0 1 0 1 0 0 0 <- Buffer[4]
+		//	⬁ Buffer[4][0]
+		protected BitArray[] Buffer { get; set; }
+
+		// frame update timer 
+		protected Timer Timer { get; } = new Timer();
+		// last buffer index, where the mouse was detected
+		protected (int X, int Y) PrevMousePosition { get; set; }
+		// height of a cell
+		protected int CellHeight => Engine.CellSize.Height;
+		// width of a cell
+		protected int CellWidth => Engine.CellSize.Width;
+
+		/// <summary>
+		/// Is the Game paused?
+		/// </summary>
+		public bool IsPaused => !Update;
+		/// <summary>
+		/// Draw Game Grid
+		/// </summary>
+		public bool GridEnabled { get => Engine.GridEnabled; set => Engine.GridEnabled = value; }
+		/// <summary>
+		/// Allow painting Cells on Mouse Click
+		/// </summary>
+		public bool DrawMode { get; set; }
+		/// <summary>
+		/// Amount of horizontal Cells
+		/// </summary>
+		public int HorizontalCellsCount => Engine.BufferDimensions.X;
+		/// <summary>
+		/// Amount of vertical Cells
+		/// </summary>
+		public int VerticalCellsCount => Engine.BufferDimensions.Y;
+
+		/// <summary>
+		/// Updaterate for Gameframes in Milliseconds (17 ms for 60fps)
+		/// </summary>
+		public int FPS { get => (int)(1000 / (double)Timer.Interval); set => Timer.Interval = (int)(1000 / (double)value); }
 		#endregion
 
 
 		#region ctor
-		public ConwayGameOfLife(Control displayControl)
+		public ConwayGameOfLife(Control displayControl, int fps = 60)
 		{
-			_timer.Interval = _updateRate;
-			_displayControl = displayControl;
-			_displayControl.Paint += OnPaint;
-			_displayControl.MouseDown += OnMouseDown;
-			_displayControl.MouseUp += OnMouseUp;
-			_displayControl.MouseMove += OnMouseMove;
+			FPS = fps;
+			DisplayControl = displayControl;
+			DisplayControl.MouseDown += OnMouseDown;
+			DisplayControl.MouseUp += OnMouseUp;
+			DisplayControl.MouseMove += OnMouseMove;
+			Timer.Tick += OnUpdate;
 		}
 		#endregion
 
@@ -59,39 +86,35 @@ namespace Drawer
 		/// <summary>
 		/// Initialize the gamefield
 		/// </summary>
-		/// <param name="cellWidth">edgelength for the square cells</param>
+		/// <param name="cellSize">edgelength for the square cells</param>
 		/// <param name="randomCells">should a random pattern of living cells be generated</param>
-		/// <param name="spawnChancePercent">spawnchance for living cells</param>
-		public void Initialize(int cellWidth, int spawnChancePercent = 0)
+		/// <param name="initialLivePercentage">spawnchance for living cells</param>
+		public void Initialize(int cellSize, int initialLivePercentage = 0)
 		{
-			if (cellWidth <= 0) return;
+			if (cellSize <= 0 || DisplayControl == null) return;
 
-			_cellWidth = cellWidth;
-			XCellAmount = _displayControl.Width / cellWidth;
-			YCellAmount = _displayControl.Height / cellWidth;
+			Engine = new GridGameEngine(DisplayControl, cellSize);
+			Buffer = GetInitialBuffer(Engine.BufferDimensions, initialLivePercentage);
+			Timer.Enabled = true;
 
-			Cells = new Cell[XCellAmount, YCellAmount];
-			var rnd = new Random();
-
-			for (int i = 0; i < XCellAmount; i++)
-				for (int j = 0; j < YCellAmount; j++)
-					Cells[i, j] = new Cell(i * cellWidth, j * cellWidth, cellWidth, spawnChancePercent != 0 ? rnd?.Next(100) <= spawnChancePercent - 1 : false);
-
-			InitializeLoopTimer();
-			_displayControl?.Invalidate();
+			Engine.Update(Buffer);
 		}
 
 		/// <summary>
 		/// Draws an X with its center at the given position
 		/// </summary>
-		/// <param name="x"></param>
-		/// <param name="y"></param>
-		public void DrawX(int x, int y)
+		/// <param name="mouseX">X-Coordinate of the center position</param>
+		/// <param name="mouseY">Y-Coordinate of the center position</param>
+		public void DrawPattern(int mouseX, int mouseY, Pattern pattern)
 		{
-			for (int i = 0; i < XCellAmount; i++)
-				for (int j = 0; j < YCellAmount; j++)
-					Cells[i, j].Alive = i - (x - y) == j || i + j == x + y ? true : Cells[i, j].Alive;
-			_displayControl?.Invalidate();
+			pattern.Anchor = GridCalcUtil.GetIndexByPixelPosition(mouseX, mouseY, CellWidth, CellHeight);
+
+			if (pattern is EndlessPattern endlessPattern)
+				ApplyToBuffer(index => endlessPattern.GetValue(index));
+			else if (pattern is FixedPattern fixedPattern)
+				ApplyToBuffer(index => fixedPattern.Indices.Contains((index.X, index.Y)));
+
+			Engine.Update(Buffer);
 		}
 
 		/// <summary>
@@ -99,171 +122,119 @@ namespace Drawer
 		/// </summary>
 		public void Clear()
 		{
-			for (int i = 0; i < XCellAmount; i++)
-				for (int j = 0; j < YCellAmount; j++)
-					Cells[i, j].Alive = false;
-			_displayControl?.Invalidate();
+			ApplyToBuffer(index => false, false);
+			Engine.Update(Buffer);
 		}
 
 		/// <summary>
 		/// Toggles the Pause state
 		/// </summary>
-		public void TogglePauseState() => _update = !_update;
+		public void TogglePauseState() => Update = !Update;
 
-		private void InitializeLoopTimer()
+
+		void ApplyToBuffer(Func<(int Y, int X), bool> aliveFunc, bool overwriteTrueVals = true)
 		{
-			_timer.Enabled = true;
-			_timer.Tick -= OnUpdate;
-			_timer.Tick += OnUpdate;
+			for (int i = 0; i < Engine.BufferDimensions.Y; i++)
+				for (int j = 0; j < Engine.BufferDimensions.X; j++)
+					Buffer[i][j] = (Buffer[i][j] && overwriteTrueVals) || aliveFunc?.Invoke((i, j)) == true;
 		}
 
-		private void OnUpdate(object sender, EventArgs e)
+		BitArray[] GetInitialBuffer((int X, int Y) dimensions, int initialLivePercentage, Random random = null)
 		{
-			if (_update)
+			random = random ?? new Random();
+			var buffer = Enumerable.Range(0, dimensions.Y)
+				.Select(a => new BitArray(dimensions.X, false))
+				.ToArray();
+			for (int i = 0; i < dimensions.Y; i++)
+				for (int j = 0; j < dimensions.X; j++)
+					buffer[i][j] = random.Next(1, 101) <= initialLivePercentage;
+			return buffer;
+		}
+
+		void OnUpdate(object sender, EventArgs e)
+		{
+			if (Update)
 			{
 				ApplyRules();
-				_displayControl?.Invalidate();
+				Engine.Update(Buffer);
 			}
 		}
 
-		private void OnMouseUp(object sender, MouseEventArgs e)
+		void OnMouseUp(object sender, MouseEventArgs e)
 		{
-			if (!_wasPaused)
-				_update = true;
-			_mouseDown = false;
-			if (Cells.Length > 0)
-				for (int i = 0; i < XCellAmount; i++)
-					for (int j = 0; j < YCellAmount; j++)
-						Cells[i, j].DrawFlag = false;
+			Update = PrevUpdateState;
 		}
 
-		private void OnMouseMove(object sender, MouseEventArgs e)
+		void OnMouseDown(object sender, MouseEventArgs e)
 		{
-			if (_mouseDown)
-				if (CurrentCellPattern == null)
-					PaintCell(e.X, e.Y);
+			PrevUpdateState = Update;
+			Update = false;
+			PrevMousePosition = GridCalcUtil.GetIndexByPixelPosition(e.X, e.Y, CellWidth, CellHeight);
 		}
 
-		private void OnMouseDown(object sender, MouseEventArgs e)
+		void OnMouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_update)
-				_wasPaused = true;
-
-			_update = false;
-			_mouseDown = true;
-			if (CurrentCellPattern == null)
-				PaintCell(e.X, e.Y);
-			else
-				DrawPattern(e.X, e.Y);
-		}
-
-		private void DrawPattern(int x, int y)
-		{
-			var xCell = x / _cellWidth;
-			var yCell = y / _cellWidth;
-			Cells[xCell, yCell].Alive = true;
-			for (int i = 0; i < CurrentCellPattern.Offsets.Length; i++)
-				GetNeighbour(xCell + CurrentCellPattern.Offsets[i].X, yCell + CurrentCellPattern.Offsets[i].Y).Alive = true;
-			_displayControl.Invalidate();
-		}
-
-		private void OnPaint(object sender, PaintEventArgs e) => DrawGameField(e?.Graphics);
-
-		private void DrawGameField(Graphics gfx)
-		{
-			DrawCells(gfx);
-			if (GridEnabled)
-				DrawGrid(gfx);
-		}
-
-		private void DrawCells(Graphics gfx)
-		{
-			if (Cells.Length > 0)
-				for (int i = 0; i < XCellAmount; i++)
-					for (int j = 0; j < YCellAmount; j++)
-						Cells[i, j]?.Draw(gfx);
-		}
-
-		private void DrawGrid(Graphics gfx)
-		{
-			for (int i = 1; i < XCellAmount; i++)
-				gfx?.DrawLine(_pen, _cellWidth * i, 0, _cellWidth * i, _cellWidth * YCellAmount);
-			for (int i = 1; i < YCellAmount; i++)
-				gfx?.DrawLine(_pen, 0, _cellWidth * i, _cellWidth * XCellAmount, _cellWidth * i);
-		}
-
-		private void PaintCell(int x, int y)
-		{
-			if (x >= 0 && y >= 0 && x < _displayControl.Width - _cellWidth && y < _displayControl.Height - _cellWidth)
+			if (DrawMode && e.Button == MouseButtons.Left && CheckMouseBounds(e.X, e.Y))
 			{
-				var selectedCell = Cells[x / _cellWidth, y / _cellWidth];
-				if (!selectedCell.DrawFlag)
-				{
-					selectedCell.Alive = !selectedCell.Alive;
-					selectedCell.DrawFlag = true;
-					_displayControl?.Invalidate();
-				}
+				var newPos = GridCalcUtil.GetIndexByPixelPosition(e.X, e.Y, CellWidth, CellHeight);
+				foreach (var (X, Y) in GridCalcUtil.GetLineCoords(newPos, PrevMousePosition))
+					Buffer[Y][X] = true;
+
+				PrevMousePosition = newPos;
+				Engine.Update(Buffer);
 			}
 		}
 
-		bool ArrayIndexExists(int x, int y) => x >= 0 && x < XCellAmount && y >= 0 && y < YCellAmount;
-
-		Cell GetNeighbour(int indexX, int indexY)
+		bool CheckMouseBounds(int x, int y)
 		{
-			if (indexX > 0)
-				indexX = indexX % XCellAmount;
-			if(indexX < 0)
-				indexX = (XCellAmount - (indexX + 2)) % XCellAmount;
-			if (indexY > 0)
-				indexY = indexY % YCellAmount;
-			if(indexY < 0)
-				indexY = (YCellAmount - (indexY + 2)) % YCellAmount;
-			return Cells[indexX, indexY];
+			return x >= 0 && y >= 0 && x < DisplayControl.Width - CellWidth && y < DisplayControl.Height - CellHeight;
 		}
 
-		IEnumerable<Cell> GetNeighbours(int i, int j)
+		bool GetBufferValueSafe(int indexX, int indexY)
 		{
-			var cells = new List<Cell>();
-			cells.Add(GetNeighbour(i - 1, j - 1));
-			cells.Add(GetNeighbour(i - 1, j));
-			cells.Add(GetNeighbour(i - 1, j + 1));
-			cells.Add(GetNeighbour(i, j + 1));
-			cells.Add(GetNeighbour(i + 1, j + 1));
-			cells.Add(GetNeighbour(i + 1, j));
-			cells.Add(GetNeighbour(i + 1, j - 1));
-			cells.Add(GetNeighbour(i, j - 1));
-			return cells;
+			if (indexX > 0) indexX %= Engine.BufferDimensions.X;
+			if(indexX < 0) indexX = (Engine.BufferDimensions.X - (indexX + 2)) % Engine.BufferDimensions.X;
+			if (indexY > 0) indexY %= Engine.BufferDimensions.Y;
+			if(indexY < 0) indexY = (Engine.BufferDimensions.Y - (indexY + 2)) % Engine.BufferDimensions.Y;
+			return Buffer[indexY][indexX];
 		}
 
 		//Any live cell with fewer than two live neighbours dies, as if by underpopulation.
 		//Any live cell with two or three live neighbours lives on to the next generation.
 		//Any live cell with more than three live neighbours dies, as if by overpopulation.
 		//Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
-		private void ApplyRules()
+		void ApplyRules()
 		{
-			bool[,] boolMatrix = new bool[XCellAmount, YCellAmount];
+			BitArray[] newBuffer = new BitArray[Engine.BufferDimensions.Y];
 
-			for (int i = 0; i < XCellAmount; i++)
-				for (int j = 0; j < YCellAmount; j++)
+			for (int y = 0; y < Engine.BufferDimensions.Y; y++)
+			{
+				newBuffer[y] = new BitArray(Engine.BufferDimensions.X, false);
+				for (int x = 0; x < Engine.BufferDimensions.X; x++)
 				{
-					var aliveNeighbourCount = GetNeighbours(i, j)?.Where(n => n.Alive)?.Count();
-					if (Cells[i, j].Alive)
-					{
-						if (aliveNeighbourCount < 2)
-							boolMatrix[i, j] = false;
-						if (aliveNeighbourCount == 2 || aliveNeighbourCount == 3)
-							boolMatrix[i, j] = true;
-						if (aliveNeighbourCount > 3)
-							boolMatrix[i, j] = false;
-					}
-					else if (aliveNeighbourCount == 3)
-						boolMatrix[i, j] = true;
+					var aliveNeighbourCount = GetAliveNeighboursCount(x, y);
+					newBuffer[y][x] = (Buffer[y][x] && aliveNeighbourCount == 2) || aliveNeighbourCount == 3;
 				}
-			for (int i = 0; i < XCellAmount; i++)
-				for (int j = 0; j < YCellAmount; j++)
-					Cells[i, j].Alive = boolMatrix[i, j];
-		}
-		#endregion
+			}
 
+			Buffer = newBuffer;
+		}
+
+		int GetAliveNeighboursCount(int i, int j)
+		{
+			IEnumerable<bool> getNeighbourVals()
+			{
+				yield return GetBufferValueSafe(i - 1, j - 1);
+				yield return GetBufferValueSafe(i - 1, j);
+				yield return GetBufferValueSafe(i - 1, j + 1);
+				yield return GetBufferValueSafe(i, j + 1);
+				yield return GetBufferValueSafe(i + 1, j + 1);
+				yield return GetBufferValueSafe(i + 1, j);
+				yield return GetBufferValueSafe(i + 1, j - 1);
+				yield return GetBufferValueSafe(i, j - 1);
+			}
+			return getNeighbourVals()?.Count(a => a) ?? 0;
+		}		
+		#endregion
 	}
 }
